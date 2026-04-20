@@ -641,39 +641,31 @@
     const listaEquipos = Object.values(tabla);
 
     return listaEquipos.sort((a, b) => {
-      // 0. Puntos (Criterio base)
+      // 0. Puntos
       if (b.pts !== a.pts) return b.pts - a.pts;
 
-      // 1. Average Particular (Diferencia de goles en partidos entre ellos)
-      // Buscamos el partido o partidos donde se enfrentaron A y B
+      // 1. Menos goles en contra (global)
+      if (a.gc !== b.gc) return a.gc - b.gc;
+
+      // 2. Más goles a favor (global)
+      if (b.gf !== a.gf) return b.gf - a.gf;
+
+      // 3. Duelo directo (quién ganó el partido entre ellos)
       const duelosDirectos = partidosGrupo.filter(p =>
               (p.local === a.id && p.visit === b.id) || (p.local === b.id && p.visit === a.id)
       );
-
-      let ptsPartA = 0; let ptsPartB = 0;
+      let ptsPartA = 0, ptsPartB = 0;
       duelosDirectos.forEach(p => {
         const gl = p.local === a.id ? p.gl : p.gv;
         const gv = p.local === a.id ? p.gv : p.gl;
-        if (gl > gv) ptsPartA += 3;
+        if (gl > gv)      ptsPartA += 3;
         else if (gl < gv) ptsPartB += 3;
         else { ptsPartA += 1; ptsPartB += 1; }
       });
+      if (ptsPartA !== ptsPartB) return ptsPartB - ptsPartA;
 
-      if (ptsPartB !== ptsPartA) return ptsPartB - ptsPartA;
-
-      // 2. Average General (Diferencia de goles total)
-      const diffA = a.gf - a.gc;
-      const diffB = b.gf - b.gc;
-      if (diffB !== diffA) return diffB - diffA;
-
-      // 3. Total goles a favor (Mayor)
-      if (b.gf !== a.gf) return b.gf - a.gf;
-
-      // 4. Total goles en contra (Menor)
-      if (a.gc !== b.gc) return a.gc - b.gc;
-
-      // 5. Sorteo puro (Moneda al aire)
-      return 0.5 - Math.random();
+      // 4. Average general (diferencia de goles)
+      if ((b.gf - b.gc) !== (a.gf - a.gc)) return (b.gf - b.gc) - (a.gf - a.gc);
     });
   }
 
@@ -911,42 +903,44 @@ function renderEquipos() {
 //  RENDER – ESTADÍSTICAS
 // ═══════════════════════════════════════════════════
 
-function renderEstadisticas() {
-  const container = document.getElementById('stats-container');
+  function renderEstadisticas() {
+    const container = document.getElementById('stats-container');
 
-  // Calcular stats de todos los grupos
-  const statsMap = {};
-  estado.equipos.forEach(e => {
-    statsMap[e.id] = { id:e.id, nombre:e.nombre, grupo:e.grupo, gf:0, gc:0, pts:0, pj:0, ta:0, tr:0 };
-  });
-  estado.partidos.filter(p => p.fase === 'Grupos' && p.gl !== null && p.gv !== null).forEach(p => {
-    const L = statsMap[p.local]; const V = statsMap[p.visit];
-    if (!L || !V) return;
-    L.pj++; V.pj++; L.gf += p.gl; L.gc += p.gv; V.gf += p.gv; V.gc += p.gl;
-    if (p.gl > p.gv)      { L.pts += 3; }
-    else if (p.gl < p.gv) { V.pts += 3; }
-    else                  { L.pts += 1; V.pts += 1; }
-  });
-  const todos = Object.values(statsMap);
-  const maxGF = Math.max(...todos.map(e=>e.gf), 1);
-  const maxPts = Math.max(...todos.map(e=>e.pts), 1);
+    const statsMap = {};
+    estado.equipos.forEach(e => {
+      statsMap[e.id] = { id:e.id, nombre:e.nombre, grupo:e.grupo, gf:0, gc:0, pts:0, pj:0, ta:0, tr:0 };
+    });
 
-  const topGoles = [...todos].sort((a,b)=>b.gf-a.gf).slice(0,8);
-  const topPuntos = [...todos].sort((a,b)=>b.pts-a.pts).slice(0,8);
-  const topDefensa = [...todos].sort((a,b)=>a.gc-b.gc).slice(0,8);
-  const totalGoles = todos.reduce((s,e)=>s+e.gf,0);
-  const totalPartidos = estado.partidos.filter(p=>p.fase==='Grupos'&&p.gl!==null).length;
+    estado.partidos.filter(p => p.fase === 'Grupos' && p.gl !== null && p.gv !== null).forEach(p => {
+      const L = statsMap[p.local];
+      const V = statsMap[p.visit];
+      if (!L || !V) return;
+      L.pj++; V.pj++;
+      L.gf += p.gl; L.gc += p.gv;
+      V.gf += p.gv; V.gc += p.gl;
+      if (p.gl > p.gv)      { L.pts += 3; }
+      else if (p.gl < p.gv) { V.pts += 3; }
+      else                  { L.pts += 1; V.pts += 1; }
+    });
 
-  container.innerHTML = `
+    const todos = Object.values(statsMap);
+    const maxGF = Math.max(...todos.map(e=>e.gf), 1);
+    const maxPts = Math.max(...todos.map(e=>e.pts), 1);
+
+    const topGoles   = [...todos].sort((a,b)=>b.gf-a.gf).slice(0,8);
+    const topPuntos  = [...todos].sort((a,b)=>b.pts-a.pts).slice(0,8);
+    const topDefensa = [...todos].sort((a,b)=>a.gc-b.gc).slice(0,8);
+    const totalGoles    = todos.reduce((s,e)=>s+e.gf,0);
+    const totalPartidos = estado.partidos.filter(p=>p.fase==='Grupos'&&p.gl!==null).length;
+
+    container.innerHTML = `
     <div class="stats-card">
       <div class="stats-card-header">⚽ Máximos Goleadores (Equipos)</div>
       <table class="stats-table">
         ${topGoles.map((e,i)=>`<tr>
           <td class="stats-rank ${i===0?'top':''}">${i+1}</td>
           <td>
-            <div class="stats-bar-wrap">
-              <div>${e.nombre}</div>
-            </div>
+            <div class="stats-bar-wrap"><div>${e.nombre}</div></div>
             <div class="stats-bar-wrap" style="margin-top:4px;">
               <div class="stats-bar" style="width:${(e.gf/maxGF)*120}px;"></div>
               <span style="font-size:11px;color:rgba(245,247,245,.4);">${e.pj} PJ</span>
@@ -992,7 +986,7 @@ function renderEstadisticas() {
         <tr><td>Sede</td><td style="font-size:11px;color:rgba(245,247,245,.5);">Polideportivo Mpal. Fco. Correa</td></tr>
       </table>
     </div>`;
-}
+  }
 
 // ═══════════════════════════════════════════════════
 //  ONEDRIVE: LEER EXCEL
@@ -1095,7 +1089,7 @@ function renderTodo() {
              visit: r.VISIT_ID ? Number(r.VISIT_ID) : null,
              label: r.LABEL
            }));
- }
+ };
 
 function mostrarSeccion(id, btn) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
