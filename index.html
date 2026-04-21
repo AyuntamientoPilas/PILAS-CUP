@@ -597,77 +597,82 @@
  const COLORES_EQUIPOS = [  
    '#e63b3b','#3b8ee6','#f0c040','#3be68a','#e63bbd','#3bf0f0',
    '#e6873b','#9b3be6','#6be63b','#e6e63b','#3b6be6','#e6553b'
- ];  
+ ];
 
- let estado = {  
-   equipos: [],  
-   partidos: [],  
-   grupos: [],  
-   cargado: false,  
-   fuenteOneDrive: false  
- };
+  let estado = {
+    equipos: [],
+    partidos: [],
+    clasificacion: {},  // 👈
+    ordenOficial: {},
+    cargado: false,
+    fuenteOneDrive: false
+  };
 
 // ═══════════════════════════════════════════════════
 //  MOTOR: CLASIFICACIÓN
 // ═══════════════════════════════════════════════════
-
-  function calcularClasificacion(grupoNum, equipos, partidos) {
-    const equiposGrupo = equipos.filter(e => e.grupo === grupoNum);
-    const tabla = {};
-
-    equiposGrupo.forEach(e => {
-      tabla[e.id] = { id: e.id, nombre: e.nombre, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0, ta: 0, tr: 0 };
-    });
-
-    const partidosGrupo = partidos.filter(p =>
-            p.fase === 'Grupos' &&
-            p.grupo === grupoNum &&
-            p.gl !== null &&
-            p.gv !== null
-    );
-
-    partidosGrupo.forEach(p => {
-      const L = tabla[p.local];
-      const V = tabla[p.visit];
-      if (!L || !V) return;
-      L.pj++; V.pj++;
-      L.gf += p.gl; L.gc += p.gv;
-      V.gf += p.gv; V.gc += p.gl;
-      if (p.gl > p.gv)      { L.pg++; V.pp++; L.pts += 3; }
-      else if (p.gl < p.gv) { V.pg++; L.pp++; V.pts += 3; }
-      else                  { L.pe++; V.pe++; L.pts += 1; V.pts += 1; }
-    });
-
-    const listaEquipos = Object.values(tabla);
-
-    return listaEquipos.sort((a, b) => {
-      // 0. Puntos
-      if (b.pts !== a.pts) return b.pts - a.pts;
-
-      // 1. Menos goles en contra (global)
-      if (a.gc !== b.gc) return a.gc - b.gc;
-
-      // 2. Más goles a favor (global)
-      if (b.gf !== a.gf) return b.gf - a.gf;
-
-      // 3. Duelo directo (quién ganó el partido entre ellos)
-      const duelosDirectos = partidosGrupo.filter(p =>
-              (p.local === a.id && p.visit === b.id) || (p.local === b.id && p.visit === a.id)
-      );
-      let ptsPartA = 0, ptsPartB = 0;
-      duelosDirectos.forEach(p => {
-        const gl = p.local === a.id ? p.gl : p.gv;
-        const gv = p.local === a.id ? p.gv : p.gl;
-        if (gl > gv)      ptsPartA += 3;
-        else if (gl < gv) ptsPartB += 3;
-        else { ptsPartA += 1; ptsPartB += 1; }
-      });
-      if (ptsPartA !== ptsPartB) return ptsPartB - ptsPartA;
-
-      // 4. Average general (diferencia de goles)
-      if ((b.gf - b.gc) !== (a.gf - a.gc)) return (b.gf - b.gc) - (a.gf - a.gc);
-    });
+  function calcularClasificacion(grupoNum) {
+    const datos = estado.clasificacion?.[grupoNum];
+    if (!datos || !datos.length) return [];
+    return [...datos].sort((a, b) => a.pos - b.pos);
   }
+  // function calcularClasificacion(grupoNum, equipos, partidos) {
+  //   const equiposGrupo = equipos.filter(e => e.grupo === grupoNum);
+  //   const tabla = {};
+  //
+  //   equiposGrupo.forEach(e => {
+  //     tabla[e.id] = { id: e.id, nombre: e.nombre, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0, ta: 0, tr: 0 };
+  //   });
+  //
+  //   const partidosGrupo = partidos.filter(p =>
+  //           p.fase === 'Grupos' &&
+  //           p.grupo === grupoNum &&
+  //           p.gl !== null &&
+  //           p.gv !== null
+  //   );
+  //
+  //   partidosGrupo.forEach(p => {
+  //     const L = tabla[p.local];
+  //     const V = tabla[p.visit];
+  //     if (!L || !V) return;
+  //     L.pj++; V.pj++;
+  //     L.gf += p.gl; L.gc += p.gv;
+  //     V.gf += p.gv; V.gc += p.gl;
+  //     if (p.gl > p.gv)      { L.pg++; V.pp++; L.pts += 3; }
+  //     else if (p.gl < p.gv) { V.pg++; L.pp++; V.pts += 3; }
+  //     else                  { L.pe++; V.pe++; L.pts += 1; V.pts += 1; }
+  //   });
+  //
+  //   const listaEquipos = Object.values(tabla);
+  //
+  //   return listaEquipos.sort((a, b) => {
+  //     // 0. Puntos
+  //     if (b.pts !== a.pts) return b.pts - a.pts;
+  //
+  //     // 1. Menos goles en contra (global)
+  //     if (a.gc !== b.gc) return a.gc - b.gc;
+  //
+  //     // 2. Más goles a favor (global)
+  //     if (b.gf !== a.gf) return b.gf - a.gf;
+  //
+  //     // 3. Duelo directo (quién ganó el partido entre ellos)
+  //     const duelosDirectos = partidosGrupo.filter(p =>
+  //             (p.local === a.id && p.visit === b.id) || (p.local === b.id && p.visit === a.id)
+  //     );
+  //     let ptsPartA = 0, ptsPartB = 0;
+  //     duelosDirectos.forEach(p => {
+  //       const gl = p.local === a.id ? p.gl : p.gv;
+  //       const gv = p.local === a.id ? p.gv : p.gl;
+  //       if (gl > gv)      ptsPartA += 3;
+  //       else if (gl < gv) ptsPartB += 3;
+  //       else { ptsPartA += 1; ptsPartB += 1; }
+  //     });
+  //     if (ptsPartA !== ptsPartB) return ptsPartB - ptsPartA;
+  //
+  //     // 4. Average general (diferencia de goles)
+  //     if ((b.gf - b.gc) !== (a.gf - a.gc)) return (b.gf - b.gc) - (a.gf - a.gc);
+  //   });
+  // }
 
 // ═══════════════════════════════════════════════════
 //  RENDER – CLASIFICACIÓN
@@ -677,7 +682,8 @@ function renderClasificacion() {
   const container = document.getElementById('grupos-container');
   container.innerHTML = '';
   [1,2,3].forEach(g => {
-    const tabla = calcularClasificacion(g, estado.equipos, estado.partidos);
+    const tabla = calcularClasificacion(g);
+    //const tabla = calcularClasificacion(g, estado.equipos, estado.partidos);
     const card = document.createElement('div');
     card.className = 'grupo-card';
     card.innerHTML = `
@@ -905,6 +911,7 @@ function renderEquipos() {
 
   function renderEstadisticas() {
     const container = document.getElementById('stats-container');
+    if (!container) return;
 
     const statsMap = {};
     estado.equipos.forEach(e => {
@@ -1039,13 +1046,13 @@ function setOdStatus(tipo, texto) {
 //  DEMO & UTILIDADES
 // ═══════════════════════════════════════════════════
 
-function cargarDatosDemostracion() {
-  const { equipos, partidos } = datosDemostracion();
-  estado.equipos  = equipos;
-  estado.partidos = partidos;
-  renderTodo();
-  setOdStatus('connected', 'Modo demostración – datos del torneo (sin resultados)');
-}
+// function cargarDatosDemostracion() {
+//   const { equipos, partidos } = datosDemostracion();
+//   estado.equipos  = equipos;
+//   estado.partidos = partidos;
+//   renderTodo();
+//   setOdStatus('connected', 'Modo demostración – datos del torneo (sin resultados)');
+// }
 
 function renderTodo() {
   renderClasificacion();
@@ -1061,9 +1068,11 @@ function renderTodo() {
 
    const buffer = await resp.arrayBuffer();
    const workbook = XLSX.read(buffer, { type: 'array' });
+   console.log('Hojas disponibles:', workbook.Sheets);
 
    const sheetPartidos = workbook.Sheets['Partidos'];
    const sheetEquipos  = workbook.Sheets['Equipos'];
+   const sheetClasif = workbook.Sheets['Clasificacion'];
 
    if (!sheetPartidos || !sheetEquipos) {
      throw new Error('Faltan hojas Equipos o Partidos');
@@ -1089,6 +1098,31 @@ function renderTodo() {
              visit: r.VISIT_ID ? Number(r.VISIT_ID) : null,
              label: r.LABEL
            }));
+
+   if (sheetClasif) {
+     const filas = XLSX.utils.sheet_to_json(sheetClasif, { defval: null });
+     estado.clasificacion = {};
+     filas.forEach(r => {
+       if (!r.GRUPO) return;
+       const g = Number(r.GRUPO);
+       if (!estado.clasificacion[g]) estado.clasificacion[g] = [];
+       estado.clasificacion[g].push({
+         id:     Number(r.ID),
+         pos:    Number(r.POS),
+         nombre: String(r.EQUIPO),
+         pj:     Number(r.PJ)  || 0,
+         pg:     Number(r.G)   || 0,
+         pe:     Number(r.E)   || 0,
+         pp:     Number(r.P)   || 0,
+         gf:     Number(r.GF)  || 0,
+         gc:     Number(r.GC)  || 0,
+         dg:     Number(r.DG)  || 0,
+         pts:    Number(r.PTS) || 0,
+       });
+     });
+   }
+   const filas = XLSX.utils.sheet_to_json(sheetClasif, { defval: null });
+   console.log('Columnas Clasificacion:', filas[0]);
  };
 
 function mostrarSeccion(id, btn) {
@@ -1098,24 +1132,36 @@ function mostrarSeccion(id, btn) {
   btn.classList.add('active');
   localStorage.setItem('pilascup_tab', id); // 👈 añadir esto
 }
-  window.addEventListener('load', async () => {
-    try {
-      await cargarExcelDesdeOneDrive();
-      renderTodo();
-    } catch (e) {
-      console.error(e);
-    } finally {
-      document.getElementById('loading-overlay').classList.add('hidden');
+window.addEventListener('load', async () => {
+  try {
+    await cargarExcelDesdeOneDrive();
+    renderTodo();
+  } catch (e) {
+    console.error(e);
+    alert('Error cargando Excel desde OneDrive');
+  } finally {
+    document.getElementById('loading-overlay').classList.add('hidden');
 
-      // 👇 añadir esto
-      const tabGuardada = localStorage.getItem('pilascup_tab');
-      if (tabGuardada) {
-        const btn = [...document.querySelectorAll('.tab-btn')]
-                .find(b => b.getAttribute('onclick')?.includes(`'${tabGuardada}'`));
-        if (btn) mostrarSeccion(tabGuardada, btn);
-      }
+    const tabGuardada = localStorage.getItem('pilascup_tab');
+    if (tabGuardada) {
+      const btn = [...document.querySelectorAll('.tab-btn')]
+              .find(b => b.getAttribute('onclick')?.includes(`'${tabGuardada}'`));
+      if (btn) mostrarSeccion(tabGuardada, btn);
     }
-  });
+  }
+});
+  // window.addEventListener('load', async () => {
+  //   try {
+  //     await cargarExcelDesdeOneDrive();   // ✅ ONE DRIVE
+  //     renderTodo();
+  //   } catch (e) {
+  //     console.error(e);
+  //     //alert('Error cargando Excel desde OneDrive');
+  //   } finally {
+  //     document.getElementById('loading-overlay').classList.add('hidden');
+  //   }
+  // });
+
 </script>
 </body>
 </html>
