@@ -1096,18 +1096,26 @@ function mostrarSeccion(id, btn) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('sec-' + id).classList.add('active');
   btn.classList.add('active');
+  localStorage.setItem('pilascup_tab', id); // 👈 añadir esto
 }
-window.addEventListener('load', async () => {
-  try {
-    await cargarExcelDesdeOneDrive();   // ✅ ONE DRIVE
-    renderTodo();
-  } catch (e) {
-    console.error(e);
-    //alert('Error cargando Excel desde OneDrive');
-  } finally {
-    document.getElementById('loading-overlay').classList.add('hidden');
-  }
-});
+  window.addEventListener('load', async () => {
+    try {
+      await cargarExcelDesdeOneDrive();
+      renderTodo();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      document.getElementById('loading-overlay').classList.add('hidden');
+
+      // 👇 añadir esto
+      const tabGuardada = localStorage.getItem('pilascup_tab');
+      if (tabGuardada) {
+        const btn = [...document.querySelectorAll('.tab-btn')]
+                .find(b => b.getAttribute('onclick')?.includes(`'${tabGuardada}'`));
+        if (btn) mostrarSeccion(tabGuardada, btn);
+      }
+    }
+  });
 </script>
 </body>
 </html>
