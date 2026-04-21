@@ -468,6 +468,31 @@
     .campo-tag { display: none; }
     .od-input { width: 100%; }
   }
+
+  .partido-estado {
+    font-family: 'Oswald', sans-serif;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 10px;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .partido-estado.en-vivo {
+    background: rgba(50,205,50,.2);
+    color: #32cd32;
+    border: 1px solid rgba(50,205,50,.5);
+    animation: parpadeo 1.2s ease-in-out infinite;
+  }
+  .partido-estado.finalizado {
+    background: rgba(224,48,48,.15);
+    color: #e03030;
+    border: 1px solid rgba(224,48,48,.3);
+  }
+  @keyframes parpadeo {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+  }
+
 </style>
 </head>
 <body>
@@ -753,16 +778,23 @@ function renderCalendario() {
  }
 
 
-function renderPartidoCard(p) {
-  const localName = p.label && !Number.isFinite(p.local)
-          ? p.label.split(' vs ')[0]
-          : nombreEquipo(p.local);
+  function renderPartidoCard(p) {
+    const localName = p.label && !Number.isFinite(p.local)
+            ? p.label.split(' vs ')[0]
+            : nombreEquipo(p.local);
 
-  const visitName = p.label && !Number.isFinite(p.visit)
-          ? p.label.split(' vs ')[1]
-          : nombreEquipo(p.visit);
+    const visitName = p.label && !Number.isFinite(p.visit)
+            ? p.label.split(' vs ')[1]
+            : nombreEquipo(p.visit);
 
-  return `
+    const enVivo = String(p.enVivo || '').trim().toLowerCase();
+    const estadoHTML = enVivo === 'si'
+            ? `<span class="partido-estado en-vivo">🟢 Jugando</span>`
+            : enVivo === 'no'
+                    ? `<span class="partido-estado finalizado">Finalizado</span>`
+                    : '';
+
+    return `
   <div class="partido-card">
 
     <div class="partido-hora">
@@ -780,14 +812,17 @@ function renderPartidoCard(p) {
       <span>${localName}</span>
     </div>
 
-    <div class="marcador-box">
-      <div class="marcador-gol" onclick="editarGol(${p.id},'l')">
-        ${p.gl !== null ? p.gl : '-'}
+    <div class="marcador-box" style="flex-direction:column; gap:4px;">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <div class="marcador-gol" onclick="editarGol(${p.id},'l')">
+          ${p.gl !== null ? p.gl : '-'}
+        </div>
+        <span class="marcador-sep">:</span>
+        <div class="marcador-gol" onclick="editarGol(${p.id},'v')">
+          ${p.gv !== null ? p.gv : '-'}
+        </div>
       </div>
-      <span class="marcador-sep">:</span>
-      <div class="marcador-gol" onclick="editarGol(${p.id},'v')">
-        ${p.gv !== null ? p.gv : '-'}
-      </div>
+      ${estadoHTML}
     </div>
 
     <div class="partido-equipo visitante">
@@ -801,7 +836,7 @@ function renderPartidoCard(p) {
     </div>
 
   </div>`;
-}
+  }
 
 // ── Edición inline de goles ──
 function editarGol(partidoId, lado) {
@@ -1074,8 +1109,8 @@ function renderTodo() {
    const sheetEquipos  = workbook.Sheets['Equipos'];
    const sheetClasif = workbook.Sheets['Clasificacion'];
 
-   if (!sheetPartidos || !sheetEquipos) {
-     throw new Error('Faltan hojas Equipos o Partidos');
+   if (!sheetPartidos || !sheetEquipos || !sheetClasif) {
+     throw new Error('Faltan hojas Equipos, Partidos o Clasificacion');
    }
 
    estado.equipos = XLSX.utils.sheet_to_json(sheetEquipos).map(r => ({
@@ -1096,7 +1131,7 @@ function renderTodo() {
              gl: Number.isFinite(r.GOL_L) ? r.GOL_L : null,
              gv: Number.isFinite(r.GOL_V) ? r.GOL_V : null,
              visit: r.VISIT_ID ? Number(r.VISIT_ID) : null,
-             label: r.LABEL
+             enVivo: String(r.TRANSMISION)
            }));
 
    if (sheetClasif) {
