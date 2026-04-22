@@ -751,25 +751,32 @@ function renderClasificacion() {
 //  RENDER – CALENDARIO
 // ═══════════════════════════════════════════════════
 
-function renderCalendario() {
-  const container = document.getElementById('calendario-container');
-  const fases = ['Grupos'];
-  const iconos = {'Grupos':'⚽'};
-//'Cuartos Oro','Cuartos Plata','Semifinal Oro','Semifinal Plata','Final Oro','Final Plata'
-//'Cuartos Oro':'🥇','Cuartos Plata':'🥈','Semifinal Oro':'🏆','Semifinal Plata':'🏅','Final Oro':'🥇','Final Plata':'🥈'
-  container.innerHTML = fases.map(fase => {
-    const ps = estado.partidos.filter(p => p.fase === fase);
-    if (!ps.length) return '';
-    return `
+  function renderCalendario() {
+    const container = document.getElementById('calendario-container');
+    const fases = ['Grupos'];
+    const iconos = {'Grupos':'⚽'};
+
+    container.innerHTML = fases.map(fase => {
+
+      const ps = estado.partidos
+              .filter(p => p.fase === fase)
+              .sort((a, b) => {
+                const [ha, ma] = a.hora.split(':').map(Number);
+                const [hb, mb] = b.hora.split(':').map(Number);
+                return (ha * 60 + ma) - (hb * 60 + mb);
+              });
+      if (!ps.length) return '';
+      return `
       <div class="fase-section">
-        <div class="fase-title">${iconos[fase]||'⚡'} ${fase}</div>
+        <div class="fase-title">${iconos[fase] || '⚡'} ${fase}</div>
         <div class="partidos-grid">
           ${ps.map(p => renderPartidoCard(p)).join('')}
         </div>
-      </div>`;
-  }).join('');
-}
+      </div>
+    `;
 
+    }).join('');
+  }
  function nombreEquipo(id) {
    const numId = Number(id);
    if (!Number.isFinite(numId)) return '—';
