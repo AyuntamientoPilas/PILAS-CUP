@@ -142,7 +142,13 @@
     overflow-x: auto;
     scrollbar-width: none;
   }
-  nav::-webkit-scrollbar { display: none; }
+  nav::-webkit-scrollbar {
+    height: 6px;
+  }
+  nav::-webkit-scrollbar-thumb {
+    background: var(--verde-claro);
+    border-radius: 10px;
+  }
   .tab-btn {
     background: none; border: none; color: rgba(245,247,245,0.5);
     font-family: 'Oswald', sans-serif; font-size: 13px; font-weight: 600;
