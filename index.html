@@ -716,64 +716,6 @@
     if (!datos || !datos.length) return [];
     return [...datos].sort((a, b) => a.pos - b.pos);
   }
-  // function calcularClasificacion(grupoNum, equipos, partidos) {
-  //   const equiposGrupo = equipos.filter(e => e.grupo === grupoNum);
-  //   const tabla = {};
-  //
-  //   equiposGrupo.forEach(e => {
-  //     tabla[e.id] = { id: e.id, nombre: e.nombre, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0, ta: 0, tr: 0 };
-  //   });
-  //
-  //   const partidosGrupo = partidos.filter(p =>
-  //           p.fase === 'Grupos' &&
-  //           p.grupo === grupoNum &&
-  //           p.gl !== null &&
-  //           p.gv !== null
-  //   );
-  //
-  //   partidosGrupo.forEach(p => {
-  //     const L = tabla[p.local];
-  //     const V = tabla[p.visit];
-  //     if (!L || !V) return;
-  //     L.pj++; V.pj++;
-  //     L.gf += p.gl; L.gc += p.gv;
-  //     V.gf += p.gv; V.gc += p.gl;
-  //     if (p.gl > p.gv)      { L.pg++; V.pp++; L.pts += 3; }
-  //     else if (p.gl < p.gv) { V.pg++; L.pp++; V.pts += 3; }
-  //     else                  { L.pe++; V.pe++; L.pts += 1; V.pts += 1; }
-  //   });
-  //
-  //   const listaEquipos = Object.values(tabla);
-  //
-  //   return listaEquipos.sort((a, b) => {
-  //     // 0. Puntos
-  //     if (b.pts !== a.pts) return b.pts - a.pts;
-  //
-  //     // 1. Menos goles en contra (global)
-  //     if (a.gc !== b.gc) return a.gc - b.gc;
-  //
-  //     // 2. Más goles a favor (global)
-  //     if (b.gf !== a.gf) return b.gf - a.gf;
-  //
-  //     // 3. Duelo directo (quién ganó el partido entre ellos)
-  //     const duelosDirectos = partidosGrupo.filter(p =>
-  //             (p.local === a.id && p.visit === b.id) || (p.local === b.id && p.visit === a.id)
-  //     );
-  //     let ptsPartA = 0, ptsPartB = 0;
-  //     duelosDirectos.forEach(p => {
-  //       const gl = p.local === a.id ? p.gl : p.gv;
-  //       const gv = p.local === a.id ? p.gv : p.gl;
-  //       if (gl > gv)      ptsPartA += 3;
-  //       else if (gl < gv) ptsPartB += 3;
-  //       else { ptsPartA += 1; ptsPartB += 1; }
-  //     });
-  //     if (ptsPartA !== ptsPartB) return ptsPartB - ptsPartA;
-  //
-  //     // 4. Average general (diferencia de goles)
-  //     if ((b.gf - b.gc) !== (a.gf - a.gc)) return (b.gf - b.gc) - (a.gf - a.gc);
-  //   });
-  // }
-
   // ═══════════════════════════════════════════════════
   //  RENDER – CLASIFICACIÓN
   // ═══════════════════════════════════════════════════
@@ -1113,64 +1055,12 @@
     </div>`;
   }
 
-  // ═══════════════════════════════════════════════════
-  //  ONEDRIVE: LEER EXCEL
-  // ═══════════════════════════════════════════════════
-  // async function cargarExcelLocal() {
-  //   const resp = await fetch('Torneo.xlsx');
-  //   if (!resp.ok) throw new Error('No se pudo cargar Torneo.xlsx');
-  //
-  //   const buffer = await resp.arrayBuffer();
-  //   const workbook = XLSX.read(buffer, { type: 'array' });
-  //
-  //   const sheetPartidos = workbook.Sheets['Partidos'];
-  //   const sheetEquipos = workbook.Sheets['Equipos'];
-  //
-  //   if (!sheetPartidos || !sheetEquipos) {
-  //     throw new Error('Faltan hojas Equipos o Partidos');
-  //   }
-  //
-  //   estado.equipos = XLSX.utils.sheet_to_json(sheetEquipos).map(r => ({
-  //     id: Number(r.ID),
-  //     nombre: String(r.NOMBRE),
-  //     grupo: Number(r.GRUPO)
-  //   }));
-  //
-  //   estado.partidos = XLSX.utils
-  //           .sheet_to_json(sheetPartidos, {defval: null })
-  //                   .map(r => ({
-  //     id: Number(r.ID),
-  //     hora: XLSX.SSF.format("hh:mm", r.HORA),
-  //     fase: String(r.FASE),
-  //     grupo: Number(r.GRUPO),
-  //     campo: Number(r.CAMPO),
-  //     local: r.LOCAL_ID ? Number(r.LOCAL_ID) : null,
-  //     gl: Number.isFinite(r.GOL_L) ? r.GOL_L : null,
-  //     gv: Number.isFinite(r.GOL_V) ? r.GOL_V : null,
-  //     visit: r.VISIT_ID ? Number(r.VISIT_ID) : null,
-  //     label: r.LABEL
-  //   }));
-  //   renderTodo();
-  // }
-
   function setOdStatus(tipo, texto) {
     const dot  = document.getElementById('od-dot');
     const text = document.getElementById('od-status-text');
     dot.className  = 'od-dot ' + tipo;
     text.textContent = texto;
   }
-
-  // ═══════════════════════════════════════════════════
-  //  DEMO & UTILIDADES
-  // ═══════════════════════════════════════════════════
-
-  // function cargarDatosDemostracion() {
-  //   const { equipos, partidos } = datosDemostracion();
-  //   estado.equipos  = equipos;
-  //   estado.partidos = partidos;
-  //   renderTodo();
-  //   setOdStatus('connected', 'Modo demostración – datos del torneo (sin resultados)');
-  // }
 
   function renderTodo() {
     renderClasificacion();
@@ -1268,18 +1158,6 @@
       }
     }
   });
-  // window.addEventListener('load', async () => {
-  //   try {
-  //     await cargarExcelDesdeOneDrive();   // ✅ ONE DRIVE
-  //     renderTodo();
-  //   } catch (e) {
-  //     console.error(e);
-  //     //alert('Error cargando Excel desde OneDrive');
-  //   } finally {
-  //     document.getElementById('loading-overlay').classList.add('hidden');
-  //   }
-  // });
-
 </script>
 </body>
 </html>
