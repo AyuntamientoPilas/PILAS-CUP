@@ -149,6 +149,7 @@
       display: flex; gap: 0;
       border-bottom: 2px solid var(--gris-linea);
       overflow-x: auto;
+      white-space: nowrap;
       scrollbar-width: none;
     }
     nav::-webkit-scrollbar {
@@ -184,6 +185,8 @@
       animation: latido 1.5s infinite;
       text-shadow: 0 0 5px #fff, 0 0 10px red, 0 0 20px red;
     }
+    .tab-btn, .tab-btn-directo {
+      display: inline-block;
     }
     .tab-btn:hover { color: var(--blanco); }
     .tab-btn-directo:hover {
