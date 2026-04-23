@@ -61,11 +61,12 @@
 
   /* ── HEADER ── */
   header {
-    position: relative; z-index: 10;
+    z-index: 10;
     background: linear-gradient(135deg, #0d2010 0%, #1a4020 60%, #0f2510 100%);
     border-bottom: 3px solid var(--oro);
-    padding-right: 0;
+    padding: 0;
     overflow: hidden;
+    position: relative;
     width: 100%;
   }
   header::after {
@@ -73,14 +74,14 @@
     position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
     background: linear-gradient(90deg, transparent, var(--oro), var(--verde-claro), var(--oro), transparent);
   }
-  @media (max-width: 600px) {
+
     .header-inner {
       flex-direction: column;
       align-items: flex-start;
       gap: 12px;
       padding: 20px 16px;
     }
-  }
+  
   .header-badge {
     width: 80px; height: 80px;
     background: linear-gradient(135deg, var(--oro), #c8960a);
